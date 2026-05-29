@@ -47,7 +47,7 @@ Core Ideas
 
 from pathlib import Path
 import pandas as pd
-import glob
+
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -59,7 +59,11 @@ def load_csv(path):
     Safely load a CSV file.
     """
     try:
-        df = pd.read_csv(path)
+        df = pd.read_csv(
+                path,
+                engine="python",
+                on_bad_lines="skip"
+                )    
 
         print(f"Loaded: {Path(path).name}")
         print(f"Shape: {df.shape}")
@@ -83,8 +87,7 @@ def load_folder(folder_path):
     Returns dictionary of DataFrames.
     """
 
-    csv_files = glob.glob(str(folder_path / "*.csv"))
-
+    csv_files = folder_path.glob("*.csv")
     data = {}
 
     for file in csv_files:
