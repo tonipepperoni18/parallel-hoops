@@ -1,0 +1,8 @@
+CATEGORY_WEIGHTS = {
+    "scoring": 0.175,
+    "playmaking": 0.175,
+    "individual_defense": 0.175,
+    "team_defense": 0.175,
+    "impact": 0.20,
+    "position": 0.10,
+}
