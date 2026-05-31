@@ -16,23 +16,15 @@ def check_merge_keys(df, df_name, merge_keys):
 
 
 def drop_suffixed_duplicate_columns(df):
-    """
-    Drops common duplicate columns created during merges.
-    """
+    df = df.copy()
+
+    # force all column names to strings
+    df.columns = df.columns.map(str)
 
     drop_patterns = [
         "_perposs",
         "_shooting",
         "_pbp"
-    ]
-
-    keep_if_contains = [
-        "pct",
-        "per_100",
-        "dist",
-        "dunk",
-        "corner",
-        "astd"
     ]
 
     cols_to_drop = []
@@ -42,12 +34,58 @@ def drop_suffixed_duplicate_columns(df):
             if col.endswith(pattern):
                 base_name = col.replace(pattern, "")
 
-                # drop boring duplicates like age_perposs, pos_perposs, rank_perposs
+                if base_name in ["rank", "age", "pos", "g", "gs", "mp"]:
+                    cols_to_drop.append(col)
+
+        return df.drop(columns=cols_to_drop)
+    df = df.copy()
+
+    # force all column names to strings
+    df.columns = df.columns.map(str)
+
+    drop_patterns = [
+        "_perposs",
+        "_shooting",
+        "_pbp"
+    ]
+
+    cols_to_drop = []
+
+    for col in df.columns:
+        for pattern in drop_patterns:
+            if col.endswith(pattern):
+                base_name = col.replace(pattern, "")
+
+                if base_name in ["rank", "age", "pos", "g", "gs", "mp"]:
+                    cols_to_drop.append(col)
+
+        return df.drop(columns=cols_to_drop)
+    """
+    Drops common duplicate columns created during merges.
+    """
+
+    df = df.copy()
+
+    # make sure all column names are strings
+    df.columns = df.columns.astype(str)
+
+    drop_patterns = [
+        "_perposs",
+        "_shooting",
+        "_pbp"
+    ]
+
+    cols_to_drop = []
+
+    for col in df.columns:
+        for pattern in drop_patterns:
+            if col.endswith(pattern):
+                base_name = col.replace(pattern, "")
+
                 if base_name in ["rank", "age", "pos", "g", "gs", "mp"]:
                     cols_to_drop.append(col)
 
     return df.drop(columns=cols_to_drop)
-
 
 def build_player_profiles(advanced, perposs, shooting, playbyplay):
     """

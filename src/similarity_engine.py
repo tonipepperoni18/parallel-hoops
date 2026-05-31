@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from scipy.spatial.distance import euclidean
 
 
 CATEGORY_WEIGHTS = {
@@ -191,47 +192,66 @@ def find_similar_players(player_name, df, top_n=10):
 
 
 def calculate_category_similarities(player_name, df):
-    """
-    Calculates similarity scores by category for one player.
-    """
+    """Calculates category similarity scores using Euclidean distance.
 
+    This avoids inflated cosine scores in small feature groups.
+    """ 
     df = df.copy().reset_index(drop=True)
-
+    
     target_index = find_player_index(df, player_name)
-
-    results = df[["player", "tm", "pos", "age", "g", "mp"]].copy()
-
+    
+    result_cols = [
+        col for col in ["player", "tm", "pos", "age", "g", "mp"]
+        if col in df.columns
+    ]
+    
+    results = df[result_cols].copy()
+    
     for category, features in FEATURE_GROUPS.items():
         available_features = [
-            feature for feature in features
+            feature for feature in features 
             if feature in df.columns
         ]
-
         if not available_features:
             continue
-
+    
         category_matrix = df[available_features].copy()
-
+        
         for col in category_matrix.columns:
             category_matrix[col] = pd.to_numeric(
                 category_matrix[col],
                 errors="coerce"
             )
-
+            
         category_matrix = category_matrix.fillna(
-            category_matrix.mean()
-        )
-
-        scores = cosine_similarity(
-            category_matrix.iloc[[target_index]],
-            category_matrix
-        )[0]
-
+            category_matrix.mean())
+        
+        target_vector = category_matrix.iloc[target_index]
+        
+        scores = []
+        
+        for i in range(len(category_matrix)):
+            comparison_vector = category_matrix.iloc[i]
+            
+            distance = euclidean(
+                target_vector, 
+                comparison_vector
+            )
+            
+            similarity = 1 / (1 + distance)
+            
+            scores.append(similarity)
         results[f"{category}_similarity"] = scores
-
+    
     return results
-
-
+        
+    
+    
+    
+    
+    
+    
+    
 def similarity_feature_report(df):
     """
     Shows which features are being used by each category.
