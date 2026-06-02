@@ -158,14 +158,28 @@ def find_player_index(df, player_name):
     return matches.index[0]
 
 
-def find_similar_players(player_name, df, top_n=10):
+def find_similar_players(
+    player_name,
+    df,
+    top_n=10,
+    same_position=False,
+    same_league=False
+):
     """
     Finds the most similar players and includes category similarity scores.
+
+    Optional filters:
+    - same_position=True only returns players with the same listed position
+    - same_league=True only returns players from the same league
     """
 
     df = df.copy().reset_index(drop=True)
 
     target_index = find_player_index(df, player_name)
+    target_player = df.iloc[target_index]
+
+    target_pos = target_player["pos"] if "pos" in df.columns else None
+    target_league = target_player["league"] if "league" in df.columns else None
 
     matrix = build_weighted_feature_matrix(df)
 
@@ -183,6 +197,16 @@ def find_similar_players(player_name, df, top_n=10):
 
     results = category_scores.drop(index=target_index)
 
+    if same_position and target_pos is not None:
+        results = results[
+            results["pos"] == target_pos
+        ]
+
+    if same_league and target_league is not None:
+        results = results[
+            results["league"] == target_league
+        ]
+
     results = results.sort_values(
         by="overall_similarity_score",
         ascending=False
@@ -191,6 +215,18 @@ def find_similar_players(player_name, df, top_n=10):
     return results.head(top_n).reset_index(drop=True)
 
 
+def find_league_comps(player_name, df, target_league="NBA", top_n=10):
+    results = find_similar_players(
+        player_name,
+        df,
+        top_n=len(df)
+    )
+
+    return (
+        results[results["league"] == target_league]
+        .head(top_n)
+        .reset_index(drop=True)
+    )
 def calculate_category_similarities(player_name, df):
     """Calculates category similarity scores using Euclidean distance.
 
@@ -201,7 +237,7 @@ def calculate_category_similarities(player_name, df):
     target_index = find_player_index(df, player_name)
     
     result_cols = [
-        col for col in ["player", "tm", "pos", "age", "g", "mp"]
+        col for col in ["player", "tm", "pos", "league", "season", "age", "g", "mp"]
         if col in df.columns
     ]
     
